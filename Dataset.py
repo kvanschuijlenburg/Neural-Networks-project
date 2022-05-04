@@ -1,10 +1,17 @@
 import numpy as np
+from keras.datasets import cifar10
 # load and ordering of the dataset
 
 class Dataset:
     def __init__():
-        # read dataset
-        pass
+        (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+        print("Shape of training data:")
+        print(X_train.shape)
+        print(y_train.shape)
+        print("Shape of test data:")
+        print(X_test.shape)
+        print(y_test.shape)
+
 
     def trainingSet():
         trainingData = []
@@ -18,3 +25,8 @@ class Dataset:
         testingLabels = []
         testingSet = {"data": np.asarray(testingData), "labels": np.asarray(testingLabels)}
         return testingSet
+
+if __name__ == '__main__':
+    test = Dataset
+    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+    print()
