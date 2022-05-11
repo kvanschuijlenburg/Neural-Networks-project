@@ -12,7 +12,6 @@ class Dataset:
         Returns the full training dataset
         """
         trainingSet = {"data": self.normalizeImages(self.trainingData), "labels": self.trainingLabels}
-           
         return trainingSet
 
     def trainValidateSet(self):
@@ -24,12 +23,11 @@ class Dataset:
         trainingSplitSet = {"data": self.normalizeImages(trainingSplitData), "labels": trainingSplitLabels}
         validationSet = {"data": self.normalizeImages(validationData), "labels": validationLabels}
         return trainingSplitSet, validationSet
-        
 
     def testingSet(self):
         # Note: never augment the testing set
         testingSet = {"data": self.normalizeImages(self.testingData), "labels": self.testingLabels}
-        testingSet = 0 # Note: the testing can only be used in the end
+        testingSet = None # Note: the testing can only be used in the end
         return testingSet
 
     def normalizeImages(self, data):

@@ -37,7 +37,7 @@ model.add(Dense(10, activation='softmax'))
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Fit the model on the training set
-history = model.fit(trainingData, trainingLabels, epochs=10, batch_size=64, validation_data=(validationData, validationLabels))
+history = model.fit(trainingData, trainingLabels, epochs=20, batch_size=64, validation_data=(validationData, validationLabels))
 
 # summarize history for accuracy
 plt.plot(history.history['accuracy'])
