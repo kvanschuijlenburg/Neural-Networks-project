@@ -3,41 +3,45 @@ os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/b
 os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
 
 from Dataset import Dataset
-import numpy as np
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
-from keras.utils.np_utils import to_categorical
 import matplotlib.pyplot as plt
+import numpy as np
 
 # create instance of the dataset
 dataset = Dataset()
-testingSet, validationSet = dataset.trainValidateSet()
 
 # get the training and validation set
 trainingSet = dataset.trainingSet()
 trainingData = trainingSet["data"]
-trainingLabels = to_categorical(trainingSet["labels"])
+trainingLabels = trainingSet["labels"]
+
+validationSet = dataset.testingSet()
 validationData = validationSet["data"]
-validationLabels = to_categorical(validationSet["labels"])
+validationLabels = validationSet["labels"]
 
 # Create the baseline architecture, and compile it
 model = Sequential()
-model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
-model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-model.add(MaxPooling2D((2, 2)))
-model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(48, 48, 1)))
 model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
 model.add(MaxPooling2D((2, 2)))
 model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
 model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+model.add(MaxPooling2D((2, 2)))
+model.add(Conv2D(256, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+model.add(Conv2D(256, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+model.add(MaxPooling2D((2, 2)))
+model.add(Conv2D(512, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+model.add(Conv2D(512, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
 model.add(MaxPooling2D((2, 2)))
 model.add(Flatten())
 model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-model.add(Dense(10, activation='softmax'))
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.add(Dense(7, activation='softmax'))
+model.compile(optimizer='sgd', loss='categorical_crossentropy', metrics=['accuracy'])
+print(model.summary())
 
 # Fit the model on the training set
-history = model.fit(trainingData, trainingLabels, epochs=20, batch_size=64, validation_data=(validationData, validationLabels))
+history = model.fit(trainingData, trainingLabels, epochs=8, batch_size=16, validation_data=(validationData, validationLabels))
 
 # summarize history for accuracy
 plt.plot(history.history['accuracy'])

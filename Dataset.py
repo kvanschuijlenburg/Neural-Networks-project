@@ -5,6 +5,8 @@ from os.path import exists
 import matplotlib.pyplot as plt
 import sys
 
+oneColumnFigureWidth = 10 # For latex
+
 class Dataset:
     def __init__(self):
         if not (exists('./fer2013/trainingX.npy') and exists('./fer2013/trainingY.npy') and exists('./fer2013/testingX.npy') and 
@@ -27,20 +29,46 @@ class Dataset:
             5:'surprise',
             6:'neutral'
         }
+        countsPerClass = self.samplesPerClass()
+        self.classWeights = np.min(countsPerClass)/countsPerClass
+
+    def plotSampleImages(self):
+        plt.figure(figsize = (oneColumnFigureWidth, 8))
+        fig, ax = plt.subplots(3, 3, figsize=(4, 4))
+        fig.subplots_adjust(hspace=0.3, wspace=1.0)
 
         for i in range(9):
             labelName = self.oneHotToLabel(self.trainingLabels[i])
-            
             plt.subplot(3, 3, i+1) 
             plt.imshow(self.trainingData[i], cmap = 'gray')    
             plt.title(labelName)   
             ax = plt.gca()
             ax.axes.xaxis.set_visible(False)
             ax.axes.yaxis.set_visible(False)
-        plt.tight_layout(pad=3.0)
-        plt.show()   
+        #plt.tight_layout(pad=3.0)
+        plt.savefig("./figures/datasetSample.png", dpi = 300, bbox_inches='tight')
+        plt.close()
+        plt.cla()
+        plt.clf() 
+    
+    def samplesPerClass(self):
+        counts = [0]*len(self.classNames)
+        for label in self.trainingLabels:
+            counts[np.argmax(label)]+=1
+        return counts
         
+    def plotSummary(self):
+        classNames = list(self.classNames.values())
+        counts = self.samplesPerClass()
 
+        fig = plt.figure(figsize = (oneColumnFigureWidth, 5))
+        plt.bar(classNames, counts, width = 0.4)  
+        plt.xlabel("Emotions")
+        plt.ylabel("Number of samples")
+        plt.savefig("./figures/datasetBalance.png", dpi = 300, bbox_inches='tight')
+        plt.close()
+        plt.cla()
+        plt.clf() 
 
     def trainingSet(self):
         """
@@ -49,21 +77,16 @@ class Dataset:
         trainingSet = {"data": self.trainingData, "labels": self.trainingLabels}
         return trainingSet
 
-    def trainValidateSet(self):
-        """
-        Splits the full training set in a training and validation set.
-        The split is randomly selected. However, the seed is fixed. Therefore, the sets will be equal every time.
-        """
-        trainingSplitData, validationData, trainingSplitLabels, validationLabels = train_test_split(self.trainingData, self.trainingLabels, test_size=0.10, random_state=10)
-        trainingSplitSet = {"data": trainingSplitData, "labels": trainingSplitLabels}
-        validationSet = {"data": validationData, "labels": validationLabels}
-        return trainingSplitSet, validationSet
-
     def testingSet(self):
         # Note: never augment the testing set
         testingSet = {"data": self.testingData, "labels": self.testingLabels}
-        testingSet = None # Note: the testing can only be used in the end
         return testingSet
+
+    def benchmarkSet(self):
+        # Note: never augment the testing set
+        benchmarkSet = {"data": self.benchmarkData, "labels": self.benchmarkLabels}
+        benchmarkSet = None # Note: the testing can only be used in the end
+        return benchmarkSet
 
     def normalizeImages(self, data):
         normalizedData = data.astype('float32')/255.0
@@ -127,3 +150,5 @@ class Dataset:
 
 if __name__ == '__main__':
     test = Dataset()    
+    #test.plotSampleImages()
+    test.plotSummary()
