@@ -1,24 +1,14 @@
-from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
+import sys
 from os.path import exists
 import matplotlib.pyplot as plt
-import sys
+import tensorflow as tf
 
 oneColumnFigureWidth = 10 # For latex
 
 class Dataset:
     def __init__(self):
-        if not (exists('./fer2013/trainingX.npy') and exists('./fer2013/trainingY.npy') and exists('./fer2013/testingX.npy') and 
-            exists('./fer2013/testingY.npy')  and exists('./fer2013/benchmarkX.npy') and exists('./fer2013/benchmarkY.npy')):
-            self.csvToNumpy()
-
-        self.trainingData = np.load('./fer2013/trainingX.npy')
-        self.trainingLabels = np.load('./fer2013/trainingY.npy')
-        self.testingData = np.load('./fer2013/testingX.npy')
-        self.testingLabels = np.load('./fer2013/testingY.npy')
-        self.benchmarkData = np.load('./fer2013/benchmarkX.npy')
-        self.benchmarkLabels = np.load('./fer2013/benchmarkY.npy')
 
         self.classNames = {
             0:'anger',
@@ -29,23 +19,38 @@ class Dataset:
             5:'surprise',
             6:'neutral'
         }
-        countsPerClass = self.samplesPerClass()
-        self.classWeights = np.min(countsPerClass)/countsPerClass
 
-    def plotSampleImages(self):
+        if not exists('./fer2013/processedData.npy'):
+            self.csvToNumpy()
+
+        processedData = np.load('./fer2013/processedData.npy', allow_pickle=True)
+        
+        self.trainingData = processedData[0]
+        self.trainingLabels = processedData[1]
+        self.augmentedData = processedData[2]
+        self.augmentedLabels = processedData[3]
+        self.testingData = processedData[4]
+        self.testingLabels = processedData[5]
+        self.benchmarkData = processedData[6]
+        self.benchmarkLabels = processedData[7]
+
+
+        countsPerClass = self.samplesPerClass()
+        self.classWeights = dict(enumerate(np.min(countsPerClass)/countsPerClass))
+
+    def plotSampleImages(self, images, labels):
         plt.figure(figsize = (oneColumnFigureWidth, 8))
         fig, ax = plt.subplots(3, 3, figsize=(4, 4))
         fig.subplots_adjust(hspace=0.3, wspace=1.0)
 
         for i in range(9):
-            labelName = self.oneHotToLabel(self.trainingLabels[i])
+            labelName = self.oneHotToLabel(labels[i])
             plt.subplot(3, 3, i+1) 
-            plt.imshow(self.trainingData[i], cmap = 'gray')    
+            plt.imshow(images[i], cmap = 'gray')    
             plt.title(labelName)   
             ax = plt.gca()
             ax.axes.xaxis.set_visible(False)
             ax.axes.yaxis.set_visible(False)
-        #plt.tight_layout(pad=3.0)
         plt.savefig("./figures/datasetSample.png", dpi = 300, bbox_inches='tight')
         plt.close()
         plt.cla()
@@ -68,13 +73,41 @@ class Dataset:
         plt.savefig("./figures/datasetBalance.png", dpi = 300, bbox_inches='tight')
         plt.close()
         plt.cla()
-        plt.clf() 
+        plt.clf()
+    
+    def augmentImages(self, data, labels):
+        augmentedData = []
+        augmentedLabels = []
+        
+        
+        for index, image in enumerate(data):
+            augmentations = [image]
+            flipped = tf.image.flip_left_right(image).numpy()
+            augmentations.append(flipped)
+            #augmentations.append(tf.image.random_brightness(image,max_delta=0.05).numpy())
+            #augmentations.append(tf.image.random_brightness(flipped,max_delta=0.05).numpy())
+            #extraLabels = labels[index]*len(augmentedData)
+            augmentedData.extend(augmentations)
+            augmentedLabels.append(labels[index])
+            augmentedLabels.append(labels[index])
+            #augmentedLabels.extend(extraLabels)         
 
-    def trainingSet(self):
+        self.plotSampleImages(augmentedData,augmentedLabels)
+        return augmentedData,augmentedLabels
+
+
+    def trainingSet(self, augment = False):
         """
         Returns the full training dataset
         """
-        trainingSet = {"data": self.trainingData, "labels": self.trainingLabels}
+        if augment:
+            trainingData = self.augmentedData
+            trainingLabels = self.augmentedLabels
+        else:
+            trainingData = self.trainingData
+            trainingLabels = self.trainingLabels
+
+        trainingSet = {"data": trainingData, "labels": trainingLabels}
         return trainingSet
 
     def testingSet(self):
@@ -85,11 +118,16 @@ class Dataset:
     def benchmarkSet(self):
         # Note: never augment the testing set
         benchmarkSet = {"data": self.benchmarkData, "labels": self.benchmarkLabels}
-        benchmarkSet = None # Note: the testing can only be used in the end
+        #benchmarkSet = None # Note: the testing can only be used in the end
         return benchmarkSet
 
     def normalizeImages(self, data):
-        normalizedData = data.astype('float32')/255.0
+        # normalizedData = data.astype('float32')/255.0
+        # normalizedData = tf.keras.utils.normalize(data)
+        normalizedData = data.copy()
+        normalizedData -= np.mean(normalizedData, axis=0)
+        normalizedData /= np.std(normalizedData, axis=0)
+
         return normalizedData
 
     def classToLabel(self, integer):
@@ -108,7 +146,6 @@ class Dataset:
             dataX.append(np.asarray(pixelArray).reshape(48, 48).astype('float32'))
         dataX = np.asarray(dataX)
         dataX = np.expand_dims(dataX, -1)
-        dataX = self.normalizeImages(dataX)
         dataY = pd.get_dummies(csvFile['emotion']).values
         dataUsage = pd.get_dummies(csvFile['Usage']).values
 
@@ -132,23 +169,31 @@ class Dataset:
                 testingY.append(dataY[index])
             else:
                 sys.exit('Error: usage undefined')
-        
+
         trainingX = np.asarray(trainingX)
         trainingY = np.asarray(trainingY)
+        augmentedTrainingX, augmentedTrainingY = self.augmentImages(trainingX, trainingY)
         testingX = np.asarray(testingX)
         testingY = np.asarray(testingY)
         benchmarkX = np.asarray(benchmarkX)
         benchmarkY = np.asarray(benchmarkY)
 
-        np.save('./fer2013/trainingX', trainingX)
-        np.save('./fer2013/trainingY', trainingY)
-        np.save('./fer2013/testingX', testingX)
-        np.save('./fer2013/testingY', testingY)
-        np.save('./fer2013/benchmarkX', benchmarkX)
-        np.save('./fer2013/benchmarkY', benchmarkY)
+        processedSet = []
+        processedSet.append(self.normalizeImages(trainingX))
+        processedSet.append(trainingY)
+        processedSet.append(self.normalizeImages(augmentedTrainingX))
+        processedSet.append(augmentedTrainingY)
+        processedSet.append(self.normalizeImages(testingX))
+        processedSet.append(testingY)
+        processedSet.append(self.normalizeImages(benchmarkX))
+        processedSet.append(benchmarkY)
+
+        processedSet = np.asarray(processedSet)
+
+        np.save('./fer2013/processedData', processedSet)
 
 
 if __name__ == '__main__':
     test = Dataset()    
-    #test.plotSampleImages()
+    test.plotSampleImages(test.augmentedData, test.augmentedLabels)
     test.plotSummary()

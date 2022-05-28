@@ -1,73 +1,48 @@
-import os
-os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin")
-os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
+import platform
+if platform.system() == 'Windows':
+    import os
+    if os.getlogin() == 'kvans':
+        os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin")
+        os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
 
 from Dataset import Dataset
+from models import deep, shallow
 from sklearn.model_selection import KFold
 from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, InputLayer
-from keras import backend
-from keras.losses import categorical_crossentropy
 import csv
+import sys
 import numpy as np
-import torch
 
-dataset = Dataset()
-classWeights = backend.variable(dataset.classWeights)
+parameterSearch = [
+    #{'architecture' : 'shallow', 'filters': 64, 'dropoutCNN': 0.25, 'dropoutFC': 0.5, 'optimizer': "Adam", 'learningRate': 0.001, 'decaySteps' : 0, 'decayRate': 0.0, 'batchSize' : 64, 'epochs' : 2, 'augmentedData' : False},
+    #{'architecture' : 'deep', 'filters': 64, 'dropoutCNN': 0.3, 'dropoutFC': 0.6, 'optimizer': "Adam", 'learningRate': 0.001, 'decaySteps' : 0, 'decayRate': 0.0, 'batchSize' : 64, 'epochs' : 100, 'augmentedData' : False},
+    {'architecture' : 'deep', 'filters': 64, 'dropoutCNN': 0.25, 'dropoutFC': 0.6, 'optimizer': "Adam", 'learningRate': 0.001, 'decaySteps' : 0, 'decayRate': 0.0, 'batchSize' : 64, 'epochs' : 100, 'augmentedData' : False},
+    {'architecture' : 'deep', 'filters': 64, 'dropoutCNN': 0.35, 'dropoutFC': 0.6, 'optimizer': "Adam", 'learningRate': 0.001, 'decaySteps' : 0, 'decayRate': 0.0, 'batchSize' : 64, 'epochs' : 100, 'augmentedData' : False},
+    ]
 
-def crossValidate(model, dataset):
+
+def crossValidate(model : Sequential, dataset, hyperParameters):
     folds = 5
-    summary = []
 
+    # Save the initial weights such that they can be loaded before each new validation
+    initialWeights = model.get_weights() 
+
+    summary = []
+    foldNumber = 1
     kfold = KFold(n_splits=folds, random_state=1, shuffle=True)
     for trainingIndexes, validationIndexes in kfold.split(dataset["data"]):
+        print("  Fold "+ str(foldNumber) + "/" + str(folds), end='\r')
+        
         trainingData = dataset["data"][trainingIndexes]
-        trainingLabels = dataset["labels"][trainingIndexes].astype(np.float32)
+        trainingLabels = dataset["labels"][trainingIndexes]
         validationData = dataset["data"][validationIndexes]
-        validationLabels = dataset["labels"][validationIndexes].astype(np.float32)
-        history = model.fit(trainingData, trainingLabels, epochs=20, batch_size=16, validation_data=(validationData, validationLabels))
+        validationLabels = dataset["labels"][validationIndexes]
+        model.set_weights(initialWeights)
+        history = model.fit(trainingData, trainingLabels, epochs=hyperParameters['epochs'], batch_size=hyperParameters['batchSize'], validation_data=(validationData, validationLabels),class_weight=classWeights, verbose=1)
         summary.append(history)
+        print("  Fold "+ str(foldNumber) + "/" + str(folds) + " max validation accuracy " + str(round(np.max(history.history['val_accuracy']), 4)))
+        foldNumber +=1
     return summary
-
-def weighted_loss(y_true, y_pred):
-    # https://gist.github.com/skeeet/cad06d584548fb45eece1d4e28cfa98b
-    # scale preds so that the class probas of each sample sum to 1
-    y_pred /= backend.sum(y_pred,axis=-1, keepdims=True)
-    # clip
-    y_pred = backend.clip(y_pred, backend.epsilon(), 1)
-    # calc
-    loss = y_true*backend.log(y_pred)*classWeights
-    loss =-backend.sum(loss,-1)
-    return loss
-
-def createModel(parameters):
-    dropoutLayers = 4 # do not change
-    convolutionalLayers = parameters['layers']
-    useWeightedLoss = parameters['balancing'] == 'LossFunction'
-    
-    model = Sequential()
-    model.add(InputLayer(input_shape=(48, 48, 1)))
-
-    for dropout in range(dropoutLayers):
-        filters = 2**dropout*64
-        for layer in range(convolutionalLayers):
-            model.add(Conv2D(filters, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-        model.add(MaxPooling2D((2, 2), strides=2))
-
-    # from here the model should not be changed 
-    model.add(Flatten())
-    model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-    model.add(Dense(7, activation='softmax'))
-
-    if useWeightedLoss:
-        loss = weighted_loss
-    else:
-        loss = 'categorical_crossentropy'
-    model.compile(optimizer='sgd', loss=loss, metrics=['accuracy'])
-    print(model.summary())
-    return model
-
-
 
 def saveModelResult(parameterSet, modelSummary):
     saveLocation = "./gridsearchResults/"
@@ -75,8 +50,7 @@ def saveModelResult(parameterSet, modelSummary):
     for key, value in parameterSet.items():
         filename += key + "=" + str(value) + "_"
     filename = filename[:len(filename)-1] + ".csv"
-    
-    
+
     folds = len(modelSummary)
     epochs = len(modelSummary[0].epoch)
 
@@ -104,20 +78,23 @@ def saveModelResult(parameterSet, modelSummary):
         csvFile.writerow(header)
         for _, row in enumerate(dataRows): csvFile.writerow(row)
 
-def main():
-    trainingSet = dataset.trainingSet()
+dataset = Dataset()
+classWeights = dataset.classWeights
 
-    parameterGrid = [
-        {'layers': 2, 'balancing': "LossFunction", 'augmentation': True},
-        {'layers': 1, 'balancing': "LossFunction", 'augmentation': True},
-        {'layers': 4, 'balancing': "Preprocessing", 'augmentation': False},
-    ]
-
-    # For each search, change the model and execute cross validation
-    for parameterSet in parameterGrid:
-        model = createModel(parameterSet)
-        modelSummary = crossValidate(model,trainingSet)
-        saveModelResult(parameterSet, modelSummary)
-
-if __name__ == '__main__':
-    main()
+# For each search, change the model and execute cross validation
+for index, hyperParameters in enumerate(parameterSearch):
+    print("Search " + str(index+1) + "/" + str(len(parameterSearch)))
+    trainingSet = dataset.trainingSet(augment=hyperParameters['augmentedData'])
+    testingSet = dataset.testingSet()
+    trainingSet['data'] = np.append(trainingSet['data'] ,testingSet['data'],0)
+    trainingSet['labels'] = np.append(trainingSet['labels'] ,testingSet['labels'],0)
+    if hyperParameters['architecture'] == 'shallow':
+        model = shallow(hyperParameters).model
+    elif hyperParameters['architecture'] == 'deep':
+        model = deep(hyperParameters).model
+    else:
+        sys.exit("No architecture chosen")
+    modelSummary = crossValidate(model,trainingSet, hyperParameters)
+    saveModelResult(hyperParameters, modelSummary)
+    print("Search " + str(index+1) + " done")
+    print()
