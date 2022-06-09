@@ -2,25 +2,32 @@ from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, InputLayer, Dropout, BatchNormalization
 import sys
 from tensorflow.keras.optimizers import Adam, SGD
-from tensorflow.keras.optimizers.schedules import ExponentialDecay
 
 
 def optimizers(hyperParameters):
-    if hyperParameters['optimizer'] == "Adam":
-        optimizer = Adam(learning_rate=hyperParameters['learningRate']) # Default LR = 0.001
-    elif hyperParameters['optimizer'] == "SGD":
-        optimizer = SGD(learning_rate=hyperParameters['learningRate']) # Default LR = 0.01
-    elif hyperParameters['optimizer'] == "Decay":
-        optimizer = ExponentialDecay(hyperParameters['learningRate'], hyperParameters['decaySteps'], hyperParameters['decayRate'])
+    if hyperParameters['opti'] == "Adam":
+        optimizer = Adam(learning_rate=hyperParameters['LR']) # Default LR = 0.001
+    elif hyperParameters['opti'] == "SGD":
+        optimizer = SGD(learning_rate=hyperParameters['LR'], momentum=hyperParameters['momentum']) # Default LR = 0.01
     else:
         sys.exit("No optimizer specified")
     return optimizer
 
+class baseline():
+    def __init__(self):
+        model = Sequential()
+        model.add(InputLayer(input_shape=(48, 48, 1))) 
+        model.add(Flatten()) # 2304 dimensional vector
+        model.add(Dense(2304, activation='relu'))
+        model.add(Dense(7, activation='softmax'))
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        self.model = model
+
 class shallow():
     def __init__(self, hyperParameters):
         # Shallow network
-        dropoutCNN = hyperParameters['dropoutCNN'] # fraction of the input units to be dropped
-        dropoutFC = hyperParameters['dropoutFC']
+        dropoutCNN = hyperParameters['dropCNN'] # fraction of the input units to be dropped
+        dropoutFC = hyperParameters['dropFC']
         filters = hyperParameters['filters']
 
         kernelSize = (7,7)
@@ -69,8 +76,8 @@ class shallow():
 class deep():
     def __init__(self, hyperParameters):
         #Deep network
-        dropoutCNN = hyperParameters['dropoutCNN'] # fraction of the input units to be dropped
-        dropoutFC = hyperParameters['dropoutFC']
+        dropoutCNN = hyperParameters['dropCNN'] # fraction of the input units to be dropped
+        dropoutFC = hyperParameters['dropFC']
         filters = hyperParameters['filters']
 
         kernelSize = (3,3) # keep 3,3 for this deep network
