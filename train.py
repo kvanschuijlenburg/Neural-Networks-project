@@ -1,10 +1,8 @@
-# Because Koen's driver is messed up:
+import os
 import platform
-if platform.system() == 'Windows':
-    import os
-    if os.getlogin() == 'kvans':
-        os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin")
-        os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
+if platform.system() == 'Windows' and os.getlogin() == 'kvans':
+    os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin")
+    os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
 from Dataset import Dataset
 from models import deep, shallow
 import matplotlib.pyplot as plt
@@ -54,7 +52,7 @@ dataset = Dataset()
 trainingSet = dataset.trainingSet(hyperParameters['augmentedData'])
 trainingData = trainingSet["data"]
 trainingLabels = trainingSet["labels"]
-validationSet = dataset.testingSet()
+validationSet = dataset.validationSet()
 validationData = validationSet["data"]
 validationLabels = validationSet["labels"]
 

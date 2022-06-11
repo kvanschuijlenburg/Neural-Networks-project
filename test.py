@@ -1,9 +1,8 @@
+import os
 import platform
-if platform.system() == 'Windows':
-    import os
-    if os.getlogin() == 'kvans':
-        os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin")
-        os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
+if platform.system() == 'Windows' and os.getlogin() == 'kvans':
+    os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin")
+    os.add_dll_directory("C:/Program Files/NVIDIA/CUDNN/zlib123dllx64/dll_x64")
 from Dataset import Dataset
 import tensorflow as tf
 import numpy as np
@@ -29,7 +28,7 @@ dataset = Dataset()
 if useTestSet == 'benchmark':
     testSet = dataset.benchmarkSet()
 else:
-    testSet = dataset.testingSet()
+    testSet = dataset.validationSet()
 
 # predict all samples from the test set
 print(model.evaluate(testSet["data"], testSet["labels"], batch_size = 1))

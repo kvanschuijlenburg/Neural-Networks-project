@@ -1,17 +1,5 @@
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, InputLayer, Dropout, BatchNormalization
-import sys
-from tensorflow.keras.optimizers import Adam, SGD
-
-
-def optimizers(hyperParameters):
-    if hyperParameters['opti'] == "Adam":
-        optimizer = Adam(learning_rate=hyperParameters['LR']) # Default LR = 0.001
-    elif hyperParameters['opti'] == "SGD":
-        optimizer = SGD(learning_rate=hyperParameters['LR'], momentum=hyperParameters['momentum']) # Default LR = 0.01
-    else:
-        sys.exit("No optimizer specified")
-    return optimizer
 
 class baseline():
     def __init__(self):
@@ -69,8 +57,7 @@ class shallow():
 
         model.add(Dense(7, activation='softmax'))
 
-        optimizer = optimizers(hyperParameters)
-        model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         self.model = model
 
 class deep():
@@ -127,6 +114,5 @@ class deep():
 
         model.add(Dense(7, activation='softmax'))
 
-        optimizer = optimizers(hyperParameters)
-        model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         self.model = model

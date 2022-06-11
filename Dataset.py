@@ -22,6 +22,7 @@ class Dataset:
         }
 
         if not exists('./fer2013/processedData.npy'): self.csvToNumpy()
+        
         processedData = np.load('./fer2013/processedData.npy', allow_pickle=True)
         self.trainingData = processedData[0]
         self.trainingLabels = processedData[1]
@@ -118,22 +119,27 @@ class Dataset:
             #augmentedLabels.append(labels[index])
         return augmentedData,augmentedLabels
 
-    def trainingSet(self, augment = False):
+    def trainingSet(self):
         """
-        Returns the full training dataset
+        Returns the normalized training dataset of the FER2013 contest
         """
-        trainingData = self.balancedData
-        trainingLabels = self.balancedLabels
-        trainingSet = {"data": trainingData, "labels": trainingLabels}
+        trainingSet = {"data": self.trainingData, "labels": self.trainingLabels}
         return trainingSet
-    
+
+    def balancedTrainingSet(self):
+        """
+        Returns the balanced by augmnentation, and normalized training dataset of the FER2013 contest
+        """
+        trainingSet = {"data": self.balancedData, "labels": self.balancedLabels}
+        return trainingSet
+
     def rawTrainingData(self):
         trainingData = self.trainingData
         trainingLabels = self.trainingLabels
         trainingSet = {"data": trainingData, "labels": trainingLabels}
         return trainingSet
 
-    def testingSet(self):
+    def validationSet(self):
         # Note: never augment the testing set
         testingSet = {"data": self.testingData, "labels": self.testingLabels}
         return testingSet
