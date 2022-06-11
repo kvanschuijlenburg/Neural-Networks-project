@@ -7,7 +7,7 @@ from Dataset import Dataset
 from models import deep, shallow
 import matplotlib.pyplot as plt
 from tensorflow.keras import callbacks
-
+import Utilities
 
 modelType = 'deep'
 
@@ -60,24 +60,4 @@ validationLabels = validationSet["labels"]
 checkPoint = callbacks.ModelCheckpoint(checkPointFilePath, save_best_only=True)
 history = model.fit(trainingData, trainingLabels, epochs=hyperParameters['epochs'], batch_size=hyperParameters['batchSize'], validation_data=(validationData, validationLabels), class_weight=dataset.classWeights, callbacks=checkPoint)
 
-# summarize history for accuracy
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
-plt.title('Baseline accuracy')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.savefig("./figures/baselineCnnAccuracy.png", dpi = 300, bbox_inches='tight')
-plt.close()
-plt.cla()
-plt.clf()
-
-# summarize history for loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('Baseline loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.savefig("./figures/baselineCnnLoss.png", dpi = 300, bbox_inches='tight')
-print()
+Utilities.plotTrainValResults(history, "./figures/Validation/", modelType)

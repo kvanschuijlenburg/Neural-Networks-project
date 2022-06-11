@@ -1,28 +1,16 @@
-from secrets import choice
 import pandas as pd
 import numpy as np
 import sys
 from os.path import exists
-import matplotlib.pyplot as plt
 import tensorflow as tf
-
-oneColumnFigureWidth = 10 # For latex
+import Utilities
 
 class Dataset:
     def __init__(self):
-
-        self.classNames = {
-            0:'anger',
-            1:'disgust',
-            2:'fear',
-            3:'happiness',
-            4:'sadness',
-            5:'surprise',
-            6:'neutral'
-        }
+        self.classNames = {0:'anger', 1:'disgust', 2:'fear', 3:'happiness', 4:'sadness', 5:'surprise', 6:'neutral'}
 
         if not exists('./fer2013/processedData.npy'): self.csvToNumpy()
-        
+
         processedData = np.load('./fer2013/processedData.npy', allow_pickle=True)
         self.trainingData = processedData[0]
         self.trainingLabels = processedData[1]
@@ -32,62 +20,51 @@ class Dataset:
         self.testingLabels = processedData[5]
         self.benchmarkData = processedData[6]
         self.benchmarkLabels = processedData[7]
+
         countsPerClass = self.samplesPerClass(self.trainingLabels)
         self.classWeights = dict(enumerate(np.min(countsPerClass)/countsPerClass))
+      
+    def trainingSet(self):
+        """
+        Returns the normalized training dataset of the FER2013 contest
+        """
+        trainingSet = {"data": self.trainingData, "labels": self.trainingLabels}
+        return trainingSet
 
-    def plotSampleImages(self, images, labels):
-        plt.figure(figsize = (oneColumnFigureWidth, 8))
-        fig, ax = plt.subplots(3, 3, figsize=(4, 4))
-        fig.subplots_adjust(hspace=0.3, wspace=1.0)
-        for i in range(9):
-            labelName = self.oneHotToLabel(labels[i])
-            plt.subplot(3, 3, i+1) 
-            plt.imshow(images[i], cmap = 'gray')    
-            plt.title(labelName)   
-            ax = plt.gca()
-            ax.axes.xaxis.set_visible(False)
-            ax.axes.yaxis.set_visible(False)
-        plt.savefig("./figures/Dataset/datasetSamples.png", dpi = 300, bbox_inches='tight')
-        plt.close()
-        plt.cla()
-        plt.clf() 
+    def balancedTrainingSet(self):
+        """
+        Returns the balanced by augmnentation, and normalized training dataset of the FER2013 contest
+        """
+        trainingSet = {"data": self.balancedData, "labels": self.balancedLabels}
+        return trainingSet
 
-    def plotWrongImages(self, images):
-        indexes = [2810, 1775, 5882, 25647, 3928, 18337, 21275, 4961, 20312]
-        plt.figure(figsize = (oneColumnFigureWidth, 8))
-        fig, ax = plt.subplots(3, 3, figsize=(4, 4))
-        fig.subplots_adjust(hspace=0.3, wspace=1.0)
-        for i in range(9):
-            imageIndex = indexes[i]
-            plt.subplot(3, 3, i+1) 
-            plt.imshow(images[imageIndex], cmap = 'gray')    
-            plt.title(chr(65+i))   
-            ax = plt.gca()
-            ax.axes.xaxis.set_visible(False)
-            ax.axes.yaxis.set_visible(False)
-        plt.savefig("./figures/Dataset/datasetWrong.png", dpi = 300, bbox_inches='tight')
-        plt.close()
-        plt.cla()
-        plt.clf() 
-    
+    def validationSet(self):
+        """
+        Returns the FER2013 test set which is used for validation
+        """
+        testingSet = {"data": self.testingData, "labels": self.testingLabels}
+        return testingSet
+
+    def benchmarkSet(self):
+        """
+        Returns the FER2013 benchmark set
+        """
+        benchmarkSet = {"data": self.benchmarkData, "labels": self.benchmarkLabels}
+        return benchmarkSet
+
     def samplesPerClass(self, classLabels):
         counts = [0]*len(self.classNames)
-        for label in classLabels:
-            counts[np.argmax(label)]+=1
+        for label in classLabels: counts[np.argmax(label)]+=1
         return counts
-        
-    def plotSummary(self):
-        classNames = list(self.classNames.values())
-        counts = self.samplesPerClass(self.trainingLabels)
-        fig = plt.figure(figsize = (oneColumnFigureWidth, 5))
-        plt.bar(classNames, counts, width = 0.4)  
-        plt.xlabel("Emotions")
-        plt.ylabel("Number of samples")
-        plt.savefig("./figures/Dataset/datasetBalance.png", dpi = 300, bbox_inches='tight')
-        plt.close()
-        plt.cla()
-        plt.clf()
-    
+
+    def classToLabel(self, integer):
+        return self.classNames[integer]
+
+    def oneHotToLabel(self, oneHot):
+        labels = []
+        for encoded in oneHot: labels.append(self.classToLabel(np.argmax(encoded)))
+        return labels
+
     def augmentImages(self, data, labels, augmentations=2):
         augmentedData = []
         augmentedLabels = []
@@ -119,42 +96,6 @@ class Dataset:
             #augmentedLabels.append(labels[index])
         return augmentedData,augmentedLabels
 
-    def trainingSet(self):
-        """
-        Returns the normalized training dataset of the FER2013 contest
-        """
-        trainingSet = {"data": self.trainingData, "labels": self.trainingLabels}
-        return trainingSet
-
-    def balancedTrainingSet(self):
-        """
-        Returns the balanced by augmnentation, and normalized training dataset of the FER2013 contest
-        """
-        trainingSet = {"data": self.balancedData, "labels": self.balancedLabels}
-        return trainingSet
-
-    def rawTrainingData(self):
-        trainingData = self.trainingData
-        trainingLabels = self.trainingLabels
-        trainingSet = {"data": trainingData, "labels": trainingLabels}
-        return trainingSet
-
-    def validationSet(self):
-        # Note: never augment the testing set
-        testingSet = {"data": self.testingData, "labels": self.testingLabels}
-        return testingSet
-
-    def benchmarkSet(self):
-        # Note: never augment the testing set
-        benchmarkSet = {"data": self.benchmarkData, "labels": self.benchmarkLabels}
-        return benchmarkSet
-
-    def normalizeImages(self, data):
-        normalizedData = data.copy()
-        normalizedData -= np.mean(normalizedData, axis=0)
-        normalizedData /= np.std(normalizedData, axis=0)
-        return normalizedData
-
     def balanceByAugmentation(self, dataX, dataY, augmentPerClass):
         dataPerClass = [[]]
         labelsPerClass= [[]]
@@ -163,7 +104,6 @@ class Dataset:
         for index in range(len(augmentPerClass)-1):
             dataPerClass.append([])
             labelsPerClass.append([])
-
         for index, sample in enumerate(dataX):
             dataPerClass[np.argmax(dataY[index])].append(sample.copy())
             labelsPerClass[np.argmax(dataY[index])].append(dataY[index].copy())
@@ -199,11 +139,12 @@ class Dataset:
 
         return balancedX[p], balancedY[p]
 
-    def classToLabel(self, integer):
-        return self.classNames[integer]
 
-    def oneHotToLabel(self, oneHot):
-        return self.classToLabel(np.argmax(oneHot))
+    def normalizeImages(self, data):
+        normalizedData = data.copy()
+        normalizedData -= np.mean(normalizedData, axis=0)
+        normalizedData /= np.std(normalizedData, axis=0)
+        return normalizedData
 
     def csvToNumpy(self):
         csvFile = pd.read_csv('./fer2013/fer2013.csv')
@@ -269,9 +210,9 @@ class Dataset:
 
         np.save('./fer2013/processedData', processedSet)
 
-
 if __name__ == '__main__':
-    test = Dataset()    
-    test.plotSampleImages(test.trainingData, test.trainingLabels)
-    #test.plotWrongImages(test.trainingData)
-    #test.plotSummary()
+    dataset = Dataset()    
+    #Utilities.plotDatasetImages("./figures/Dataset/datasetSamples", dataset.trainingData, dataset.oneHotToLabel(dataset.trainingLabels))
+    #wrongExamples = dataset.trainingData[[2810, 1775, 5882, 25647, 3928, 18337, 21275, 4961, 20312]]
+    #Utilities.plotDatasetImages("./figures/Dataset/datasetWrong", wrongExamples)
+    #Utilities.plotSummary("./figures/Dataset/datasetBalance", list(dataset.classNames.values()), dataset.samplesPerClass(dataset.trainingLabels))
