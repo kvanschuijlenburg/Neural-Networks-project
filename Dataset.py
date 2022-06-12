@@ -4,6 +4,9 @@ import sys
 from os.path import exists
 import tensorflow as tf
 import Utilities
+from skimage.util import random_noise
+import random
+
 
 class Dataset:
     def __init__(self):
@@ -65,42 +68,24 @@ class Dataset:
         for encoded in oneHot: labels.append(self.classToLabel(np.argmax(encoded)))
         return labels
 
-    def augmentImages(self, data, labels, augmentations=2):
+    def augmentImages(self, data, augmentations):
         augmentedData = []
-        augmentedLabels = []
-        augmentations=10
-        for _, image in enumerate(data):
+        for index, image in enumerate(data):
             augmentedImages = [tf.image.flip_left_right(image).numpy()]
-            contrastLower = 1
-            contrastUpper = 50
-            brightness = 50
-            if augmentations >= 2:
-                augmentedImages.append(tf.image.random_brightness(image,max_delta=brightness).numpy())
-            if augmentations >= 3:
-                augmentedImages.append(tf.image.random_brightness(augmentedImages[0],max_delta=brightness).numpy())
-            if augmentations >= 4:
-                augmentedImages.append(tf.image.random_contrast(image,contrastLower, contrastUpper).numpy())
-            if augmentations >= 5:
-                augmentedImages.append(tf.image.random_contrast(augmentedImages[0],contrastLower, contrastUpper).numpy())
-            if augmentations >= 6:
-                augmentedImages.append(tf.image.random_contrast(augmentedImages[1],contrastLower, contrastUpper).numpy())
-            if augmentations >= 7:
-                augmentedImages.append(tf.image.random_contrast(augmentedImages[2],contrastLower, contrastUpper).numpy())#0.02, 0.1
-            if augmentations >= 8:
-                extraAgumentations = augmentations-7
-                for _ in range(extraAgumentations):
-                    augmentedImages.append(tf.image.random_brightness(image,max_delta=brightness).numpy())
-
+            for _ in range(augmentations-1):
+                if bool(random.getrandbits(1)):
+                    augmentedImages.append(random_noise(image, mode='gaussian', var=0.0005))
+                else:
+                    augmentedImages.append(random_noise(augmentedImages[0], mode='gaussian', var=0.0005))    
+            #if augmentations >= 9 and index < 8:
+            #    Utilities.plotDatasetImages("./figures/Dataset/datasetBalanced" + str(index), augmentedImages)
             augmentedData.extend(augmentedImages)
-            #augmentedLabels.append(labels[index])
-            #augmentedLabels.append(labels[index])
-        return augmentedData,augmentedLabels
+        return augmentedData
 
     def balanceByAugmentation(self, dataX, dataY, augmentPerClass):
+        # create and fill the labels and data arrays per class
         dataPerClass = [[]]
         labelsPerClass= [[]]
-        balancedX = []
-        balancedY = []
         for index in range(len(augmentPerClass)-1):
             dataPerClass.append([])
             labelsPerClass.append([])
@@ -108,37 +93,30 @@ class Dataset:
             dataPerClass[np.argmax(dataY[index])].append(sample.copy())
             labelsPerClass[np.argmax(dataY[index])].append(dataY[index].copy())
         
+        # Augment the data per class
+        balancedX = []
         for index, augmentations in enumerate(augmentPerClass):
-            samplesInClass = len(dataPerClass[index])
-            augmentationsPerSample, toSample = divmod(augmentations, samplesInClass)
+            augmentationsEachSample, toSample = divmod(augmentations, len(dataPerClass[index]))
             
-            extraFromSamples = []
-            dataArray = np.asarray(dataPerClass[index])
-            samplesToBeAugmented = dataArray[np.random.choice(dataArray.shape[0],toSample, replace=False), :]
+            dataInClass = np.asarray(dataPerClass[index])
+            sampledFromClass = dataInClass[np.random.choice(dataInClass.shape[0],toSample, replace=False), :]
 
-            for image in samplesToBeAugmented:
-                extraFromSamples.append(tf.image.random_brightness(image, max_delta=50))
-                labelsPerClass[index].append(labelsPerClass[index][0])
-
-            if augmentationsPerSample > 0:
-                extraSamples,_ = self.augmentImages(dataPerClass[index], labelsPerClass[index], augmentations=augmentationsPerSample)
-                dataPerClass[index].extend(extraSamples)
-                toExtend = []
-                for _ in range(len(extraSamples)):
-                    toExtend.append(labelsPerClass[index][0])
-                labelsPerClass[index].extend(toExtend)
-
-            dataPerClass[index].extend(extraFromSamples)
-      
+            for image in sampledFromClass:
+                balancedX.append(random_noise(image, mode='gaussian', var=0.0005))
+            
+            if augmentationsEachSample > 0:
+                balancedX.extend(self.augmentImages(dataPerClass[index], augmentationsEachSample))         
             balancedX.extend(dataPerClass[index])
-            balancedY.extend(labelsPerClass[index])
-        
+
+        balancedY = []
+        for index, labels in enumerate(labelsPerClass):
+            numberOfLabels = len(dataPerClass[index]) + augmentPerClass[index]
+            for _  in range(numberOfLabels): balancedY.append(labels[0])
+
         balancedX = np.asarray(balancedX)
         balancedY = np.asarray(balancedY)
         p = np.random.permutation(len(balancedX))
-
         return balancedX[p], balancedY[p]
-
 
     def normalizeImages(self, data):
         normalizedData = data.copy()
@@ -147,72 +125,54 @@ class Dataset:
         return normalizedData
 
     def csvToNumpy(self):
+        # Read 
         csvFile = pd.read_csv('./fer2013/fer2013.csv')
         pixels = csvFile['pixels'].tolist()
+        datasetY = pd.get_dummies(csvFile['emotion']).values
+        datasetUsage = csvFile['Usage'].tolist()
 
-        dataX = []
-        for row in pixels:
+        trainingX, trainingY = [], []
+        testingX, testingY = [], []
+        benchmarkX, benchmarkY = [], []
+
+        for index, row in enumerate(pixels):
             pixelArray = [int(pixel) for pixel in row.split(' ')]
-            dataX.append(np.asarray(pixelArray).reshape(48, 48).astype('float32'))
-        dataX = np.asarray(dataX)
-        dataX = np.expand_dims(dataX, -1)
-        dataY = pd.get_dummies(csvFile['emotion']).values
-        dataUsage = pd.get_dummies(csvFile['Usage']).values
-
-        trainingX = []
-        trainingY = []
-        testingX = []
-        testingY = []
-        benchmarkX = []
-        benchmarkY = []
-
-        for index, image in enumerate(dataX):
-            usage = np.argmax(dataUsage[index])
-            if usage == 2:
-                trainingX.append(image)
-                trainingY.append(dataY[index])
-            elif usage == 1:
-                benchmarkX.append(image)
-                benchmarkY.append(dataY[index])
-            elif usage == 0:
-                testingX.append(image)
-                testingY.append(dataY[index])
+            datasetX = np.asarray(pixelArray).reshape(48, 48).astype('float32')
+            datasetX /=255.0
+            datasetX = np.expand_dims(datasetX, -1)
+            if datasetUsage[index] == 'Training':
+                trainingX.append(datasetX)
+                trainingY.append(datasetY[index])
+            elif datasetUsage[index] == 'PublicTest':
+                benchmarkX.append(datasetX)
+                benchmarkY.append(datasetY[index])
+            elif datasetUsage[index] == 'PrivateTest':
+                testingX.append(datasetX)
+                testingY.append(datasetY[index])
             else:
                 sys.exit('Error: usage undefined')
-
-        trainingX = np.asarray(trainingX)
-        trainingY = np.asarray(trainingY)
+        
         countsPerClass = self.samplesPerClass(trainingY)
         augmentPerClass = np.max(countsPerClass)-countsPerClass
-        #trainingX, trainingY = self.balanceByAugmentation(trainingX, trainingY, augmentPerClass)
         balancedX, balancedY = self.balanceByAugmentation(trainingX, trainingY, augmentPerClass)
 
+        saveArray = []
+        saveArray.append(self.normalizeImages(np.asarray(trainingX)))
+        saveArray.append(np.asarray(trainingY))
+        saveArray.append(self.normalizeImages(balancedX))
+        saveArray.append(balancedY)
+        saveArray.append(self.normalizeImages(np.asarray(testingX)))
+        saveArray.append(np.asarray(testingY))
+        saveArray.append(self.normalizeImages(np.asarray(benchmarkX)))
+        saveArray.append(np.asarray(benchmarkY))
+        saveArray = np.asarray(saveArray)
 
-        #augmentedTrainingX, augmentedTrainingY = self.augmentImages(trainingX, trainingY)
-        #augmentedTrainingX=[]
-        #augmentedTrainingY=[]
-        testingX = np.asarray(testingX)
-        testingY = np.asarray(testingY)
-        benchmarkX = np.asarray(benchmarkX)
-        benchmarkY = np.asarray(benchmarkY)
-
-        processedSet = []
-        processedSet.append(self.normalizeImages(trainingX))
-        processedSet.append(trainingY)
-        processedSet.append(self.normalizeImages(balancedX))
-        processedSet.append(balancedY)
-        processedSet.append(self.normalizeImages(testingX))
-        processedSet.append(testingY)
-        processedSet.append(self.normalizeImages(benchmarkX))
-        processedSet.append(benchmarkY)
-
-        processedSet = np.asarray(processedSet)
-
-        np.save('./fer2013/processedData', processedSet)
+        np.save('./fer2013/processedData', saveArray)
 
 if __name__ == '__main__':
     dataset = Dataset()    
-    #Utilities.plotDatasetImages("./figures/Dataset/datasetSamples", dataset.trainingData, dataset.oneHotToLabel(dataset.trainingLabels))
-    #wrongExamples = dataset.trainingData[[2810, 1775, 5882, 25647, 3928, 18337, 21275, 4961, 20312]]
-    #Utilities.plotDatasetImages("./figures/Dataset/datasetWrong", wrongExamples)
+    Utilities.plotDatasetImages("./figures/Dataset/datasetBalanced", dataset.balancedData, dataset.oneHotToLabel(dataset.balancedLabels))
+    Utilities.plotDatasetImages("./figures/Dataset/datasetSamples", dataset.trainingData, dataset.oneHotToLabel(dataset.trainingLabels))
+    wrongExamples = dataset.trainingData[[2810, 1775, 5882, 25647, 3928, 18337, 21275, 4961, 20312]]
+    Utilities.plotDatasetImages("./figures/Dataset/datasetWrong", wrongExamples)
     #Utilities.plotSummary("./figures/Dataset/datasetBalance", list(dataset.classNames.values()), dataset.samplesPerClass(dataset.trainingLabels))

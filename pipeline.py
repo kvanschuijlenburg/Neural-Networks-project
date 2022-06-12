@@ -14,11 +14,11 @@ batchSize = 64
 epochs = 100
 saveLocation = "./gridsearchResults/"
 
-parameterSearch = [
+#parameterSearch = [
     # Deep, class weights
     #{'architecture' : 'deep', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.3, 'dropFC': 0.6},
-    {'arch' : 'deep', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.4, 'dropFC': 0.6},
-    {'arch' : 'deep', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.5, 'dropFC': 0.6},
+    #{'arch' : 'deep', 'balancing' : 'Augmentation', 'filters': 64, 'dropCNN': 0.3, 'dropFC': 0.6},
+    #{'arch' : 'deep', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.5, 'dropFC': 0.6},
 
     # Deep, augmentation
 
@@ -32,7 +32,33 @@ parameterSearch = [
     #{'name' : 'BalanceAugment', 'arch' : 'deep', 'filters': 64, 'dropCNN': 0.3, 'dropFC': 0.6, 'opti': "Adam", 'LR': 0.001, 'momentum' : 0, 'batch' : 64, 'epochs' : 100, 'augmented' : False},
     #{'name' : 'BalanceAugment', 'arch' : 'deep', 'filters': 64, 'dropCNN': 0.3, 'dropFC': 0.6, 'opti': "Adam", 'LR': 0.001, 'momentum' : 0, 'balancing' : 'Loss'},
     #{'name' : 'deep', 'arch' : 'deep', 'filters': 64, 'dropCNN': 0.5, 'dropFC': 0.6, 'opti': "Adam", 'LR': 0.0005, 'momentum' : 0, 'balancing' : 'Augmention'},
-    ]
+    #]
+
+architectures = ['deep']
+balancing = ['Loss', 'Augmentation']
+filters = [64]
+dropCNN = [0.2, 0.3, 0.4, 0.5]
+dropFC =  [0.4, 0.5, 0.6, 0.7]
+
+augmentationTime = 1670
+lossTime = 1100
+estimatedTime = 0
+
+parameterSearch = []
+for arch in architectures:
+    for balance in balancing:
+        for filter in filters:
+            for dropoutCNN in dropCNN:
+                for dropoutFC in dropFC:
+                    if balance == 'Loss':
+                        estimatedTime +=lossTime
+                    else:
+                        estimatedTime +=augmentationTime
+                    experimentDict = {'arch' : arch, 'balancing' : balance, 'filters': filter, 'dropCNN': dropoutCNN, 'dropFC': dropoutFC}
+                    parameterSearch.append(experimentDict)
+hours = round(estimatedTime/3600)
+minutes = round((estimatedTime - hours*3600)/60)
+print('Number of experiments is '+ str(len(parameterSearch)) + ". Estimated time is " + str(hours) + " hours, and " + str(minutes) + " Minutes.")
 
 def parametersToName(parameterSet):
     name = ""
