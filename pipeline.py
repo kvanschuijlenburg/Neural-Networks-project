@@ -34,10 +34,10 @@ saveLocation = "./gridsearchResults/"
     #{'name' : 'deep', 'arch' : 'deep', 'filters': 64, 'dropCNN': 0.5, 'dropFC': 0.6, 'opti': "Adam", 'LR': 0.0005, 'momentum' : 0, 'balancing' : 'Augmention'},
     #]
 
-architectures = ['deep']
-balancing = ['Loss', 'Augmentation']
+architectures = ['shallow','deep']
+balancing = ['Augmentation','Loss']
 filters = [64]
-dropCNN = [0.2, 0.3, 0.4, 0.5]
+dropCNN = [0.1, 0.2, 0.3, 0.4, 0.5]
 dropFC =  [0.4, 0.5, 0.6, 0.7]
 
 augmentationTime = 1670
