@@ -4,14 +4,16 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 import pandas as pd
 import numpy as np
+import os
 
 oneColumnFigureWidth = 10 # For latex
 
-def plotTrainValResults(history, folder, name):
-    # summarize history for accuracy
+# def plotTrainValResults(history, folder, name):
+def plotTrainValResults(data, folder, name):
+    # Data is [epoch, loss, accuracy, validationLoss, validationAccuracy]
     saveLocation = folder + name
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
+    plt.plot(data[:,2])
+    plt.plot(data[:,4])
     plt.title('Baseline accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
@@ -21,9 +23,8 @@ def plotTrainValResults(history, folder, name):
     plt.cla()
     plt.clf()
 
-    # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
+    plt.plot(data[:,1])
+    plt.plot(data[:,3])
     plt.title('Baseline loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
@@ -74,3 +75,23 @@ def plotSummary(fileName, classNames, countsPerClass):
     plt.close()
     plt.cla()
     plt.clf()
+
+def saveTrainingHistory(history, saveLocation):
+    epochs = len(history.epoch)
+    #'Epoch', 'loss', 'accuracy', 'validation loss', 'validation accuracy']
+    dataRows = []
+    for epoch in range(epochs):
+        loss = history.history['loss'][epoch]
+        accuracy = history.history['accuracy'][epoch]
+        validationLoss = history.history['val_loss'][epoch]
+        validationAccuracy = history.history['val_accuracy'][epoch]
+        dataRows.append([epoch+1, loss, accuracy, validationLoss, validationAccuracy]) 
+    dataRows = np.asarray(dataRows)
+    np.save(saveLocation +'/trainingHistory', dataRows)
+
+def plotTrainingResults(directory = "./TrainedModels"):
+    for folder in os.listdir(directory):
+        data = np.load(directory + '/'+ folder + '/trainingHistory.npy')
+        plotTrainValResults(data, './figures/validationResults/',folder)
+
+plotTrainingResults()
