@@ -34,28 +34,79 @@ saveLocation = "./gridsearchResults/"
     #{'name' : 'deep', 'arch' : 'deep', 'filters': 64, 'dropCNN': 0.5, 'dropFC': 0.6, 'opti': "Adam", 'LR': 0.0005, 'momentum' : 0, 'balancing' : 'Augmention'},
     #]
 
+shallowAugmentationTime = 1350
+shallowLossTime = 750
+deepAugmentationTime = 1670
+deepLossTime = 1100
+estimatedTime = 0
+parameterSearch = []
+
+# Shared settings for all models
 architectures = ['shallow','deep']
 balancing = ['Augmentation','Loss']
 filters = [64]
 dropCNN = [0.1, 0.2, 0.3, 0.4, 0.5]
 dropFC =  [0.4, 0.5, 0.6, 0.7]
-
-augmentationTime = 1670
-lossTime = 1100
-estimatedTime = 0
-
-parameterSearch = []
 for arch in architectures:
     for balance in balancing:
         for filter in filters:
             for dropoutCNN in dropCNN:
                 for dropoutFC in dropFC:
-                    if balance == 'Loss':
-                        estimatedTime +=lossTime
-                    else:
-                        estimatedTime +=augmentationTime
+                    if arch == 'deep' and balance == 'Loss': estimatedTime +=deepLossTime
+                    elif arch == 'deep' and balance == 'Augmentation': estimatedTime +=deepAugmentationTime
+                    elif arch == 'shallow' and balance == 'Loss': estimatedTime +=shallowLossTime
+                    elif arch == 'shallow' and balance == 'Augmentation': estimatedTime += shallowAugmentationTime 
                     experimentDict = {'arch' : arch, 'balancing' : balance, 'filters': filter, 'dropCNN': dropoutCNN, 'dropFC': dropoutFC}
                     parameterSearch.append(experimentDict)
+
+# Deep augmentation model
+filters = [64]
+#dropCNN = [0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]
+dropCNN = [0.05, 0.1, 0.15]
+#dropFC =  [0.5, 0.6, 0.7]
+dropFC =  [0.55, 0.6, 0.65]
+for filter in filters:
+    for dropoutCNN in dropCNN:
+        for dropoutFC in dropFC:
+            estimatedTime +=deepAugmentationTime
+            experimentDict = {'arch' : 'deep', 'balancing' : 'Augmentation', 'filters': filter, 'dropCNN': dropoutCNN, 'dropFC': dropoutFC}
+            parameterSearch.append(experimentDict)
+
+# Deep loss model
+filters = [64]
+dropCNN = [0.15, 0.20, 0.25]
+dropFC =  [0.6,0.7,0.8]
+for filter in filters:
+    for dropoutCNN in dropCNN:
+        for dropoutFC in dropFC:
+            estimatedTime +=deepLossTime
+            experimentDict = {'arch' : 'deep', 'balancing' : 'Loss', 'filters': filter, 'dropCNN': dropoutCNN, 'dropFC': dropoutFC}
+            parameterSearch.append(experimentDict)
+
+# Shallow augmentation
+filters = [64]
+dropCNN = [0.15, 0.25]
+dropFC =  [0.55, 0.65]
+for filter in filters:
+    for dropoutCNN in dropCNN:
+        for dropoutFC in dropFC:
+            estimatedTime +=shallowAugmentationTime
+            experimentDict = {'arch' : 'shallow', 'balancing' : 'Augmentation', 'filters': filter, 'dropCNN': dropoutCNN, 'dropFC': dropoutFC}
+            parameterSearch.append(experimentDict)
+
+
+# Shallow loss
+filters = [64]
+dropCNN = [0.15, 0.25]
+dropFC =  [0.2, 0.3, 0.4]
+for filter in filters:
+    for dropoutCNN in dropCNN:
+        for dropoutFC in dropFC:
+            estimatedTime +=shallowLossTime
+            experimentDict = {'arch' : 'shallow', 'balancing' : 'Loss', 'filters': filter, 'dropCNN': dropoutCNN, 'dropFC': dropoutFC}
+            parameterSearch.append(experimentDict)
+
+
 hours = round(estimatedTime/3600)
 minutes = round((estimatedTime - hours*3600)/60)
 print('Number of experiments is '+ str(len(parameterSearch)) + ". Estimated time is " + str(hours) + " hours, and " + str(minutes) + " Minutes.")
