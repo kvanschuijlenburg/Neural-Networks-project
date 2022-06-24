@@ -5,6 +5,7 @@ import seaborn as sn
 import pandas as pd
 import numpy as np
 import os
+from IPython.display import display
 
 #from sqlalchemy import true
 #from Dataset import Dataset
@@ -200,9 +201,13 @@ def plotTestResults(directory = "./TrainedModels"):
         data = np.load(directory + '/'+ folder + '/testResults.npy', allow_pickle=True)
         # print(folder + ': ' + str(data[2]))
         # plotTrainValResults(data, './figures/validationResults/',folder)
-        precisions = classPrecision(data[0], data[1])
+        print()
+        print(folder)
+        precisions = classPrecision(data[0], data[1])[:2]
+        table = pd.DataFrame(precisions)
+        display(table.transpose())
         #accuracy = topNAccuracy(data[0], data[1])
-        print(folder + ' top 1 and 2 class precision ' + str(precisions[:2]))
+        #print(folder + ' top 1 and 2 class precision ' + str(precisions[:2]))
         #plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
 
 # plotAllValidatonAccuracy()
