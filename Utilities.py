@@ -1,3 +1,4 @@
+from copyreg import pickle
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -6,12 +7,16 @@ import pandas as pd
 import numpy as np
 import os
 
+from sqlalchemy import true
+#from Dataset import Dataset
+
 oneColumnFigureWidth = 10 # For latex
 
 # def plotTrainValResults(history, folder, name):
 def plotTrainValResults(data, folder, name):
     # Data is [epoch, loss, accuracy, validationLoss, validationAccuracy]
     saveLocation = folder + name
+
     plt.plot(data[:,2])
     plt.plot(data[:,4])
     plt.title('Baseline accuracy')
@@ -31,13 +36,13 @@ def plotTrainValResults(data, folder, name):
     plt.legend(['train', 'test'], loc='upper left')
     plt.savefig(saveLocation + "Loss.png", dpi = 300, bbox_inches='tight')
 
-def plotTopOneConfusionMatrix(labelTrue, labelPredicted, labels, fileName):
+def plotTopOneConfusionMatrix(labelTrue, labelPredicted, labelsDict, fileName):
     confusionMatrix = confusion_matrix(labelTrue, labelPredicted)
 
     # Normalize matrix, and convert it to a pandas dataframe
     confusionMatrixNormalized = confusionMatrix.astype('float') / confusionMatrix.sum(axis=1)[:, np.newaxis]
     labels = []
-    for index in range(7): labels.append(labels[index])
+    for index in range(7): labels.append(labelsDict[index])
     matrixPandas = pd.DataFrame(confusionMatrixNormalized,labels, labels)
 
     # Plot confusion matrix
@@ -94,4 +99,12 @@ def plotTrainingResults(directory = "./TrainedModels"):
         data = np.load(directory + '/'+ folder + '/trainingHistory.npy')
         plotTrainValResults(data, './figures/validationResults/',folder)
 
-plotTrainingResults()
+def plotTestResults(directory = "./TrainedModels"):
+    classLabels = {0:'anger', 1:'disgust', 2:'fear', 3:'happiness', 4:'sadness', 5:'surprise', 6:'neutral'}
+    for folder in os.listdir(directory):
+        data = np.load(directory + '/'+ folder + '/testResults.npy', allow_pickle=True)
+        # plotTrainValResults(data, './figures/validationResults/',folder)
+        plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
+
+#plotTrainingResults()
+plotTestResults()

@@ -44,6 +44,7 @@ for index, filename in enumerate(os.listdir("./gridsearchResults")):
     
     found = False
     maxValAccuracy = round(dataframe["validation accuracy"].max(),3)
+
     for ind, parameter in enumerate(parameters):
         if experiment == parameter:
             maxValidationAccuracy[ind][index] = maxValAccuracy
@@ -54,6 +55,8 @@ for index, filename in enumerate(os.listdir("./gridsearchResults")):
         resultArray[index] = maxValAccuracy
         maxValidationAccuracy.append(resultArray.copy())
 
+
+
 plt.legend(handles=[patchOne, patchTwo,patchThree,patchFour])
 plt.xlabel("Epoch")
 plt.ylabel("Validation accuracy")
@@ -63,6 +66,8 @@ plt.cla()
 plt.clf()
 
 maxValidationAccuracy = np.asarray(maxValidationAccuracy)
+
+
 table = pd.DataFrame(parameters)
 
 table['deep, augmentation'] = maxValidationAccuracy[:,0]
@@ -73,6 +78,7 @@ display(table.transpose())
 
 fig = plt.figure(figsize=(20,20))
 for modelNumber in range(4):
+    print('max validation accuracy is '+str(np.max(maxValidationAccuracy[:,modelNumber])))
     nonZeroIndices = np.where(maxValidationAccuracy[:,modelNumber] != 0)[0]
     ax = fig.add_subplot(2, 2, modelNumber+1, projection='3d')
     indexMax = np.argmax(maxValidationAccuracy[:,modelNumber])
