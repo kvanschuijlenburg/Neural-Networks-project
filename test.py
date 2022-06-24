@@ -19,10 +19,10 @@ for folder in os.listdir(directory):
     # predict all samples from the test set
     metrics = model.evaluate(testSet["data"], testSet["labels"], batch_size = 64)
     predicted = model.predict(testSet["data"])
-    labelPredicted = []
+    labelPredictions = []
     labelTrue = []
     for index, prediction in enumerate(predicted):
-        labelPredicted.append(int(np.argmax(prediction)))
-        labelTrue.append(int(np.argmax(testSet["labels"][index])))
-    saveTestData = np.asarray([labelPredicted, labelTrue, metrics])
+        labelPredictions.append(prediction)
+        labelTrue.append(testSet["labels"][index])
+    saveTestData = np.asarray([labelPredictions, labelTrue, metrics])
     np.save(directory+ '/'+folder+'/testResults', saveTestData)

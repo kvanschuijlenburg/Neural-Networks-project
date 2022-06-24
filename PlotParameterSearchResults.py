@@ -5,13 +5,14 @@ import pandas as pd
 from IPython.display import display
 import numpy as np
 from matplotlib import cm
+import Utilities
 
 
 twoColumnFigureWidth = 20 # For latex
 cmap = {0:'red',1:'blue',2:'yellow',3:'green'}
 
 pltValAcc = plt.figure(figsize = (twoColumnFigureWidth, 10))
-#pltValLoss = plt.figure(figsize = (twoColumnFigureWidth, 10))
+#pltValLoss = plt.figure(figsize = (twoCik olumnFigureWidth, 10))
 axValAcc = pltValAcc.add_subplot()
 #axValLoss = pltValLoss.add_subplot()
 
@@ -56,7 +57,6 @@ for index, filename in enumerate(os.listdir("./gridsearchResults")):
         maxValidationAccuracy.append(resultArray.copy())
 
 
-
 plt.legend(handles=[patchOne, patchTwo,patchThree,patchFour])
 plt.xlabel("Epoch")
 plt.ylabel("Validation accuracy")
@@ -67,14 +67,15 @@ plt.clf()
 
 maxValidationAccuracy = np.asarray(maxValidationAccuracy)
 
-
 table = pd.DataFrame(parameters)
+table = table.drop('filters',1)
 
 table['deep, augmentation'] = maxValidationAccuracy[:,0]
 table['deep, loss'] = maxValidationAccuracy[:,1]
 table['shallow, augmentation'] = maxValidationAccuracy[:,2]
 table['shallow, loss'] = maxValidationAccuracy[:,3]
-display(table.transpose())
+
+Utilities.tableToLatex(table)
 
 fig = plt.figure(figsize=(20,20))
 for modelNumber in range(4):
@@ -86,8 +87,7 @@ for modelNumber in range(4):
     x = float(table['dropCNN'][indexMax])
     y=  float(table['dropFC'][indexMax])
     z=maxValidationAccuracy[:,modelNumber][indexMax]+0.002
-    ax.scatter(x,y,z,s=10**2)
-    #surf = ax.plot_wireframe(table['dropCNN'][nonZeroIndices], table['dropFC'][nonZeroIndices], results[:,modelNumber][nonZeroIndices])#, rstride=1, cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    #ax.scatter(x,y,z,s=10**2)
     if modelNumber == 0: modelName = 'Deep, augmentation'
     elif modelNumber == 1: modelName = 'Deep, loss'
     elif modelNumber == 2: modelName = 'Shallow, augmentation'
@@ -100,28 +100,10 @@ for modelNumber in range(4):
 #ax.zaxis.set_major_locator(LinearLocator(10))
 #ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
-plt.show()
+#plt.show()
 plt.savefig('./figures/ParameterSearch/dropoutLandscapes.png', dpi = 300, bbox_inches='tight')
 plt.close()
 plt.cla()
 plt.clf()
 
 
-
-
-# pltTrainAcc = plt.figure(figsize = (twoColumnFigureWidth, 10))
-
-# axTrainAcc = pltTrainAcc.add_subplot()
-# axValAcc = pltValAcc.add_subplot()
-
-
-#axTrainAcc.plot(dataframe["Epoch"], dataframe["accuracy"], label=experimentName)   
-#axValAcc.plot(dataframe["Epoch"], dataframe["validation accuracy"], label = experimentName)
-
-# axTrainAcc.legend()
-# axValAcc.legend()
-# pltTrainAcc.savefig("./figures/crossValidateTrainAccuracy.png", dpi = 300, bbox_inches='tight')
-# pltValAcc.savefig("./figures/crossValidateValidationAccuracy.png", dpi = 300, bbox_inches='tight')
-# plt.close()
-# plt.cla()
-# plt.clf() 

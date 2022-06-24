@@ -15,18 +15,26 @@ dataset = Dataset()
 trainingSet = dataset.trainingSet()
 trainingData = trainingSet["data"]
 trainingLabels = trainingSet["labels"]
+balancedTrainingSet = dataset.balancedTrainingSet()
+balancedTrainingData = balancedTrainingSet['data']
+balancedTrainingLabels = balancedTrainingSet['labels']
 validationSet = dataset.validationSet()
 validationData = validationSet["data"]
 validationLabels = validationSet["labels"]
 
 # Create the baseline architecture, and compile it
-model = baseline().model
-print(model.summary())
+def trainBaseline(name, balanced):
+    model = baseline().model
+    checkPointFilePath = './TrainedModels/' + name
+    checkPoint = callbacks.ModelCheckpoint(checkPointFilePath, save_best_only=True)
+    if balanced:
+        history = model.fit(balancedTrainingData, balancedTrainingLabels, epochs=100, batch_size=64, validation_data=(validationData, validationLabels), callbacks=checkPoint)
+    else:
+        history = model.fit(trainingData, trainingLabels, epochs=100, batch_size=64, validation_data=(validationData, validationLabels), callbacks=checkPoint)
+    print("max validation accuracy " + str(round(np.max(history.history['val_accuracy']), 4)))
+    Utilities.saveTrainingHistory(history, checkPointFilePath)
+
+trainBaseline("Baseline Loss", False)
+trainBaseline("Baseline Augmentation", True)
 
 # Fit the model on the training set, and save the best model using the validation set
-checkPointFilePath = './TrainedModels/Baseline'
-checkPoint = callbacks.ModelCheckpoint(checkPointFilePath, save_best_only=True)
-history = model.fit(trainingData, trainingLabels, epochs=100, batch_size=64, validation_data=(validationData, validationLabels))
-print("max validation accuracy " + str(round(np.max(history.history['val_accuracy']), 4)))
-
-Utilities.saveTrainingHistory(history, checkPointFilePath)

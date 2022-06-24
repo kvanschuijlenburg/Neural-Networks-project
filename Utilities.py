@@ -1,4 +1,3 @@
-from copyreg import pickle
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -7,7 +6,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from sqlalchemy import true
+#from sqlalchemy import true
 #from Dataset import Dataset
 
 oneColumnFigureWidth = 10 # For latex
@@ -19,7 +18,7 @@ def plotTrainValResults(data, folder, name):
 
     plt.plot(data[:,2])
     plt.plot(data[:,4])
-    plt.title('Baseline accuracy')
+    plt.title(name + ' accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
@@ -30,14 +29,19 @@ def plotTrainValResults(data, folder, name):
 
     plt.plot(data[:,1])
     plt.plot(data[:,3])
-    plt.title('Baseline loss')
+    plt.title(name + 'loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
     plt.savefig(saveLocation + "Loss.png", dpi = 300, bbox_inches='tight')
+    plt.close()
+    plt.cla()
+    plt.clf()
 
-def plotTopOneConfusionMatrix(labelTrue, labelPredicted, labelsDict, fileName):
-    confusionMatrix = confusion_matrix(labelTrue, labelPredicted)
+def plotTopOneConfusionMatrix(labelPrediction, labelTrue, labelsDict, fileName):
+    trueClass = np.argmax(labelTrue, axis=1)
+    predictedClass = np.argmax(labelPrediction, axis=1)
+    confusionMatrix = confusion_matrix(trueClass, predictedClass)
 
     # Normalize matrix, and convert it to a pandas dataframe
     confusionMatrixNormalized = confusionMatrix.astype('float') / confusionMatrix.sum(axis=1)[:, np.newaxis]
@@ -94,17 +98,113 @@ def saveTrainingHistory(history, saveLocation):
     dataRows = np.asarray(dataRows)
     np.save(saveLocation +'/trainingHistory', dataRows)
 
+def tableToLatex(table : pd.DataFrame):
+    with open("./figures/ParameterSearch/LatexTable.txt", 'w') as latex:
+        latex.write('    \\begin{tabular}{c')
+        for column in range(table.columns.size):
+            latex.write('|c')
+        latex.write('}\n')
+        latex.write('        \hline \n')
+        latex.write('        Parameter search')
+        
+        for column in table.columns:
+            latex.write(' & '+ column)
+        latex.write(' \\\\ \n')
+        latex.write('        \\hline \n')
+        
+        for index, row in table.iterrows():
+            rowText = '        '
+            rowText += str(index+1)
+            for subIndex, variable in enumerate(table.columns):
+                rowText += ' & '
+                if subIndex < table.columns.size-4:
+                    rowText += row[variable]
+                else:
+                    maxValue = row[variable] == table.max()[subIndex]
+                    if maxValue:
+                        rowText += '\\textbf{' + str(row[variable]) + '}'
+                    else:
+                        if row[variable] == 0.0:
+                            rowText += '-'
+                        else:
+                            rowText += str(row[variable])
+            rowText += ' \\\\ \n'
+            latex.write(rowText)
+        latex.write('    \\end{tabular}\n')
+
+def topNAccuracy(predicted, true):
+    trueClass = np.argmax(true, axis=1)
+    nCorrect = [0]*len(predicted[0])
+    for row, prediction in enumerate(predicted):
+        correctClass = trueClass[row]
+        sortedPrediction = np.argsort(prediction, axis=0)
+
+        predictedCorrect = False
+        for topN in range(len(predicted[0])):
+            predictedClass = sortedPrediction[len(sortedPrediction)-topN-1]
+            
+            if predictedClass == correctClass or predictedCorrect:
+                predictedCorrect = True
+                nCorrect[topN] +=1
+    nCorrect = np.asarray(nCorrect)
+    nAccuracy = nCorrect/len(true)
+    return nAccuracy
+
+def classPrecision(predicted, true):
+    trueClass = np.argmax(true, axis=1)
+    tempClasses = [0]*len(predicted[0])
+    nCorrectPerClass = []
+    for i in range(len(predicted[0])):
+        nCorrectPerClass.append(tempClasses.copy())
+    # nCorrectPerClass = [tempClasses.copy()]*len(predicted[0])
+    samplesPerClass = [0]*len(predicted[0])
+    for row, prediction in enumerate(predicted):
+        correctClass = trueClass[row]
+        samplesPerClass[correctClass] +=1
+        sortedPrediction = np.argsort(prediction, axis=0)
+
+        predictedCorrect = False
+        for topN in range(len(predicted[0])):
+            predictedClass = sortedPrediction[len(sortedPrediction)-topN-1]
+            if predictedClass == correctClass or predictedCorrect:
+                predictedCorrect = True
+                # nCorrect[topN] +=1
+                nCorrectPerClass[topN][correctClass] +=1
+    for i in range(len(nCorrectPerClass[0])):
+        for j in range(len(nCorrectPerClass[0])):
+            nCorrectPerClass[i][j] /= samplesPerClass[j]
+    return nCorrectPerClass
+
 def plotTrainingResults(directory = "./TrainedModels"):
     for folder in os.listdir(directory):
         data = np.load(directory + '/'+ folder + '/trainingHistory.npy')
+        print(folder + ': max validaton accuracy ' + str(round(max(data[:, 4]),3)))
         plotTrainValResults(data, './figures/validationResults/',folder)
+
+def plotAllValidatonAccuracy(directory = "./TrainedModels"):
+    for folder in os.listdir(directory):
+        data = np.load(directory + '/'+ folder + '/trainingHistory.npy')
+        plt.plot(data[:,4])
+        plt.title('Validation accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['Baseline Augmentation', 'Baseline Loss', 'Deep Augmentation', 'Deep Loss', 'Shallow Augmentation', 'Shallow Loss'], loc='lower right')
+    plt.savefig('./figures/validationResults/ValidationsAccuracy.png', dpi = 300, bbox_inches='tight')
+    plt.close()
+    plt.cla()
+    plt.clf()
 
 def plotTestResults(directory = "./TrainedModels"):
     classLabels = {0:'anger', 1:'disgust', 2:'fear', 3:'happiness', 4:'sadness', 5:'surprise', 6:'neutral'}
     for folder in os.listdir(directory):
         data = np.load(directory + '/'+ folder + '/testResults.npy', allow_pickle=True)
+        # print(folder + ': ' + str(data[2]))
         # plotTrainValResults(data, './figures/validationResults/',folder)
-        plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
+        precisions = classPrecision(data[0], data[1])
+        #accuracy = topNAccuracy(data[0], data[1])
+        print(folder + ' top 1 and 2 class precision ' + str(precisions[:2]))
+        #plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
 
-#plotTrainingResults()
+# plotAllValidatonAccuracy()
+# plotTrainingResults()
 plotTestResults()
