@@ -11,6 +11,7 @@ from IPython.display import display
 #from Dataset import Dataset
 
 oneColumnFigureWidth = 10 # For latex
+twoColumnFigureWidth = 20 # For latex
 
 # def plotTrainValResults(history, folder, name):
 def plotTrainValResults(data, folder, name):
@@ -52,7 +53,7 @@ def plotTopOneConfusionMatrix(labelPrediction, labelTrue, labelsDict, fileName):
 
     # Plot confusion matrix
     plt.figure(figsize = (oneColumnFigureWidth, 5))
-    sn.set(font_scale=1.4)
+    sn.set(font_scale=2.0)
     sn.heatmap(matrixPandas, cmap = 'OrRd', annot=True, annot_kws={"size": 16}, fmt='.2f') # font size
     plt.savefig(fileName + ".png", dpi = 300, bbox_inches='tight')
 
@@ -77,10 +78,14 @@ def plotDatasetImages(fileName, images, labels = None):
     plt.clf() 
 
 def plotSummary(fileName, classNames, countsPerClass):
-    fig = plt.figure(figsize = (oneColumnFigureWidth, 5))
+    fontSize = 15
+    plt.figure(figsize = (oneColumnFigureWidth, 5))
     plt.bar(classNames, countsPerClass, width = 0.4)  
-    plt.xlabel("Emotions")
-    plt.ylabel("Number of samples")
+    plt.xticks(fontsize=fontSize)
+    plt.yticks(fontsize=fontSize)
+    #ax.tick_params(axis ='both', which ='both', labelsize = 20)
+    plt.xlabel("Emotions", fontsize=fontSize)
+    plt.ylabel("Number of samples",fontsize=fontSize)
     plt.savefig(fileName + ".png", dpi = 300, bbox_inches='tight')
     plt.close()
     plt.cla()
@@ -183,13 +188,16 @@ def plotTrainingResults(directory = "./TrainedModels"):
         plotTrainValResults(data, './figures/validationResults/',folder)
 
 def plotAllValidatonAccuracy(directory = "./TrainedModels"):
+    plt.figure(figsize = (twoColumnFigureWidth, 10))
+    fontSize = 20
     for folder in os.listdir(directory):
         data = np.load(directory + '/'+ folder + '/trainingHistory.npy')
         plt.plot(data[:,4])
-        plt.title('Validation accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['Baseline Augmentation', 'Baseline Loss', 'Deep Augmentation', 'Deep Loss', 'Shallow Augmentation', 'Shallow Loss'], loc='lower right')
+        plt.ylabel('Validation accuracy', fontsize=fontSize)
+        plt.xlabel('Epoch',  fontsize=fontSize)
+        plt.legend(['Baseline, augmentation', 'Baseline, weighted loss', 'Deep, augmentation', 'Deep, weighted loss', 'Shallow, augmentation', 'Shallow, weighted loss'], loc='lower right', fontsize=fontSize)
+    plt.xticks(fontsize=fontSize)
+    plt.yticks(fontsize=fontSize)
     plt.savefig('./figures/validationResults/ValidationsAccuracy.png', dpi = 300, bbox_inches='tight')
     plt.close()
     plt.cla()
@@ -204,12 +212,14 @@ def plotTestResults(directory = "./TrainedModels"):
         print()
         print(folder)
         precisions = classPrecision(data[0], data[1])[:2]
+        meanClass = np.average(precisions[0])
+        print(meanClass)
         table = pd.DataFrame(precisions)
         display(table.transpose())
         #accuracy = topNAccuracy(data[0], data[1])
         #print(folder + ' top 1 and 2 class precision ' + str(precisions[:2]))
-        #plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
-
-# plotAllValidatonAccuracy()
-# plotTrainingResults()
-plotTestResults()
+        plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
+if __name__ == '__main__':
+    # plotAllValidatonAccuracy()
+    # plotTrainingResults()
+    plotTestResults()

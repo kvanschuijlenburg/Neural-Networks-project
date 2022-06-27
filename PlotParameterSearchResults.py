@@ -37,11 +37,11 @@ for index, filename in enumerate(os.listdir("./gridsearchResults")):
 
     axValAcc.plot(dataframe["Epoch"], dataframe["validation accuracy"], color=cmap[index])
     #axValLoss.plot(dataframe["Epoch"], dataframe["validation loss"], color=cmap[index])
-
-    patchOne = mpatches.Patch(color=cmap[0], label='Deep, augmented')
-    patchTwo = mpatches.Patch(color=cmap[1], label='Deep, loss')
-    patchThree = mpatches.Patch(color=cmap[2], label='Shallow, augmented')
-    patchFour = mpatches.Patch(color=cmap[3], label='Shallow, loss')
+    axValAcc.tick_params(axis ='both', which ='both', labelsize = 20)
+    patchOne = mpatches.Patch(color=cmap[0], label='Deep, augmentation')
+    patchTwo = mpatches.Patch(color=cmap[1], label='Deep, weighted loss')
+    patchThree = mpatches.Patch(color=cmap[2], label='Shallow, augmentation')
+    patchFour = mpatches.Patch(color=cmap[3], label='Shallow, weighted loss')
     
     found = False
     maxValAccuracy = round(dataframe["validation accuracy"].max(),3)
@@ -56,10 +56,10 @@ for index, filename in enumerate(os.listdir("./gridsearchResults")):
         resultArray[index] = maxValAccuracy
         maxValidationAccuracy.append(resultArray.copy())
 
-
-plt.legend(handles=[patchOne, patchTwo,patchThree,patchFour])
-plt.xlabel("Epoch")
-plt.ylabel("Validation accuracy")
+plt.legend(handles=[patchOne, patchTwo,patchThree,patchFour],fontsize=20)
+plt.xlabel("Epoch", fontsize=20)
+plt.tick_params('both')
+plt.ylabel("Validation accuracy", fontsize=20)
 plt.savefig('./figures/ParameterSearch/parameterSearchValidationAccuracies.png', dpi = 300, bbox_inches='tight')
 plt.close()
 plt.cla()
@@ -77,6 +77,7 @@ table['shallow, loss'] = maxValidationAccuracy[:,3]
 
 Utilities.tableToLatex(table)
 
+fontSize = 20
 fig = plt.figure(figsize=(20,20))
 for modelNumber in range(4):
     print('max validation accuracy is '+str(np.max(maxValidationAccuracy[:,modelNumber])))
@@ -84,18 +85,20 @@ for modelNumber in range(4):
     ax = fig.add_subplot(2, 2, modelNumber+1, projection='3d')
     indexMax = np.argmax(maxValidationAccuracy[:,modelNumber])
     ax.plot_trisurf(table['dropCNN'][nonZeroIndices], table['dropFC'][nonZeroIndices], maxValidationAccuracy[:,modelNumber][nonZeroIndices],cmap=cm.coolwarm)
+    ax.tick_params(axis ='both', which ='both', labelsize = fontSize)
     x = float(table['dropCNN'][indexMax])
     y=  float(table['dropFC'][indexMax])
     z=maxValidationAccuracy[:,modelNumber][indexMax]+0.002
     #ax.scatter(x,y,z,s=10**2)
     if modelNumber == 0: modelName = 'Deep, augmentation'
-    elif modelNumber == 1: modelName = 'Deep, loss'
+    elif modelNumber == 1: modelName = 'Deep, weighted loss'
     elif modelNumber == 2: modelName = 'Shallow, augmentation'
-    else: modelName = 'Shallow, loss'
-    ax.set_title(modelName)
-    ax.set_xlabel('Dropout CNN')
-    ax.set_ylabel('Dropout FC')
-    ax.set_zlabel('Validation accuracy')
+    else: modelName = 'Shallow, weighted loss'
+    ax.set_title(modelName, fontsize=fontSize)
+    ax.set_xlabel('Dropout CNN', fontsize=fontSize, labelpad=20)
+    ax.set_ylabel('Dropout FC', fontsize=fontSize, labelpad=20)
+    ax.set_zlabel('Validation accuracy', fontsize=fontSize, labelpad=20)
+    
     
 #ax.zaxis.set_major_locator(LinearLocator(10))
 #ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
