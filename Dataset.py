@@ -171,8 +171,8 @@ class Dataset:
 
 if __name__ == '__main__':
     dataset = Dataset()    
-    #Utilities.plotDatasetImages("./figures/Dataset/datasetBalanced", dataset.balancedData, dataset.oneHotToLabel(dataset.balancedLabels))
-    #Utilities.plotDatasetImages("./figures/Dataset/datasetSamples", dataset.trainingData, dataset.oneHotToLabel(dataset.trainingLabels))
-    #wrongExamples = dataset.trainingData[[2810, 1775, 5882, 25647, 3928, 18337, 21275, 4961, 20312]]
-    #Utilities.plotDatasetImages("./figures/Dataset/datasetWrong", wrongExamples)
+    Utilities.plotDatasetImages("./figures/Dataset/datasetBalanced", dataset.balancedData, dataset.oneHotToLabel(dataset.balancedLabels))
+    Utilities.plotDatasetImages("./figures/Dataset/datasetSamples", dataset.trainingData, dataset.oneHotToLabel(dataset.trainingLabels))
+    wrongExamples = dataset.trainingData[[2810, 1775, 5882, 25647, 3928, 18337, 21275, 4961, 20312]]
+    Utilities.plotDatasetImages("./figures/Dataset/datasetWrong", wrongExamples)
     Utilities.plotSummary("./figures/Dataset/datasetBalance", list(dataset.classNames.values()), dataset.samplesPerClass(dataset.trainingLabels))

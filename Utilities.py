@@ -216,10 +216,11 @@ def plotTestResults(directory = "./TrainedModels"):
         print(meanClass)
         table = pd.DataFrame(precisions)
         display(table.transpose())
-        #accuracy = topNAccuracy(data[0], data[1])
-        #print(folder + ' top 1 and 2 class precision ' + str(precisions[:2]))
+        accuracy = topNAccuracy(data[0], data[1])
+        print(folder + ' top 1 and 2 class precision ' + str(precisions[:2]))
         plotTopOneConfusionMatrix(data[0], data[1], classLabels, "./figures/Results/confusionMatrix" + folder)
+
 if __name__ == '__main__':
-    # plotAllValidatonAccuracy()
-    # plotTrainingResults()
+    plotAllValidatonAccuracy()
+    plotTrainingResults()
     plotTestResults()

@@ -6,15 +6,16 @@ if platform.system() == 'Windows' and os.getlogin() == 'kvans':
 
 from Dataset import Dataset
 from Models import deep, shallow
-from tensorflow.keras import callbacks
 import Utilities
+from tensorflow.keras import callbacks
+
 
 # The best hyper parameters found during the parameter search
 experiments = [
     {'arch' : 'deep', 'balancing' : 'Augmentation', 'filters': 64, 'dropCNN': 0.1, 'dropFC': 0.6},
     {'arch' : 'deep', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.15, 'dropFC': 0.6},
-    #{'arch' : 'shallow', 'balancing' : 'Augmentation', 'filters': 64, 'dropCNN': 0.25, 'dropFC': 0.55},
-    #{'arch' : 'shallow', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.25, 'dropFC': 0.3},
+    {'arch' : 'shallow', 'balancing' : 'Augmentation', 'filters': 64, 'dropCNN': 0.25, 'dropFC': 0.55},
+    {'arch' : 'shallow', 'balancing' : 'Loss', 'filters': 64, 'dropCNN': 0.25, 'dropFC': 0.3},
 ]
 
 # create instance of the dataset, and get the training and validation set

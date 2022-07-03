@@ -36,5 +36,3 @@ def trainBaseline(name, balanced):
 
 trainBaseline("Baseline Loss", False)
 trainBaseline("Baseline Augmentation", True)
-
-# Fit the model on the training set, and save the best model using the validation set

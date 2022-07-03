@@ -69,7 +69,6 @@ search.extend(combinator(['shallow','deep'], ['Augmentation','Loss'], [64], [0.1
 # Deep augmentation model
 search.extend(combinator(['deep'], ['Augmentation'], [64], [0.0, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5], [0.5, 0.6, 0.7]))
 search.extend(combinator(['deep'], ['Augmentation'], [64], [0.05, 0.1, 0.15], [0.55, 0.6, 0.65]))
-# best: search.extend(combinator(['deep'], ['Augmentation'], [64], [0.1], [0.6]))
 
 # Deep loss model
 search.extend(combinator(['deep'], ['Loss'], [64], [0.15, 0.20, 0.25], [0.6,0.7,0.8]))

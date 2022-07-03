@@ -2,7 +2,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
-from IPython.display import display
 import numpy as np
 from matplotlib import cm
 import Utilities
@@ -12,9 +11,7 @@ twoColumnFigureWidth = 20 # For latex
 cmap = {0:'red',1:'blue',2:'yellow',3:'green'}
 
 pltValAcc = plt.figure(figsize = (twoColumnFigureWidth, 10))
-#pltValLoss = plt.figure(figsize = (twoCik olumnFigureWidth, 10))
 axValAcc = pltValAcc.add_subplot()
-#axValLoss = pltValLoss.add_subplot()
 
 parameters = []
 maxValidationAccuracy = []
@@ -36,7 +33,6 @@ for index, filename in enumerate(os.listdir("./gridsearchResults")):
         index +=1  
 
     axValAcc.plot(dataframe["Epoch"], dataframe["validation accuracy"], color=cmap[index])
-    #axValLoss.plot(dataframe["Epoch"], dataframe["validation loss"], color=cmap[index])
     axValAcc.tick_params(axis ='both', which ='both', labelsize = 20)
     patchOne = mpatches.Patch(color=cmap[0], label='Deep, augmentation')
     patchTwo = mpatches.Patch(color=cmap[1], label='Deep, weighted loss')
@@ -98,10 +94,6 @@ for modelNumber in range(4):
     ax.set_xlabel('Dropout CNN', fontsize=fontSize, labelpad=20)
     ax.set_ylabel('Dropout FC', fontsize=fontSize, labelpad=20)
     ax.set_zlabel('Validation accuracy', fontsize=fontSize, labelpad=20)
-    
-    
-#ax.zaxis.set_major_locator(LinearLocator(10))
-#ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
 #plt.show()
 plt.savefig('./figures/ParameterSearch/dropoutLandscapes.png', dpi = 300, bbox_inches='tight')
